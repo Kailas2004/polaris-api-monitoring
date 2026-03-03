@@ -9,7 +9,7 @@ This guide deploys:
 ## 1. Create Railway resources
 
 In your Railway project, add:
-- `PostgreSQL`
+- `Postgres` (or `PostgreSQL` template with mounted volume)
 - `Redis`
 - `Service` for backend (from this repo)
 - `Service` for frontend (from this repo, `frontend` directory)
@@ -31,6 +31,7 @@ SPRING_DATASOURCE_PASSWORD=<POSTGRES_PASSWORD>
 SPRING_DATA_REDIS_HOST=<REDIS_HOST>
 SPRING_DATA_REDIS_PORT=<REDIS_PORT>
 SPRING_DATA_REDIS_PASSWORD=<REDIS_PASSWORD>
+SPRING_DATA_REDIS_URL=redis://default:<REDIS_PASSWORD>@<REDIS_HOST>:6379
 
 POLARIS_AUTH_ADMIN_USERNAME=admin
 POLARIS_AUTH_ADMIN_PASSWORD=Admin@123
@@ -46,7 +47,7 @@ Health check path:
 
 ## 3. Frontend service settings
 
-Use `frontend` as service root.
+Use `frontend` as service root. This repo includes [`frontend/Dockerfile`](/Users/kailasmac/Desktop/polaris/frontend/Dockerfile) and [`frontend/nginx.conf`](/Users/kailasmac/Desktop/polaris/frontend/nginx.conf) for Railway.
 
 - Build command: `npm ci && npm run build`
 - Start command: `npm run preview -- --host 0.0.0.0 --port $PORT`
@@ -55,6 +56,12 @@ Environment variables (frontend):
 
 ```bash
 VITE_API_BASE_URL=https://<your-backend-domain>
+```
+
+Deploy frontend using the `frontend` path as root:
+
+```bash
+railway up frontend --path-as-root --service polaris-frontend --environment production
 ```
 
 ## 4. CORS configuration
