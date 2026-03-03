@@ -90,6 +90,7 @@ erDiagram
 - Login endpoint requires `{ username, password, role }`; the backend verifies the selected role is granted before issuing a token.
 - Tokens live in `AuthTokenService`’s `ConcurrentHashMap` with a 12-hour TTL (`polaris.auth.token-ttl-seconds`). Logout revokes the token.
 - Spring Security guards:
+  - `/actuator/health`, `/actuator/health/**`, `/actuator/info` → public (for Render health checks)
   - `/admin/**`, `/api/keys/**`, `/profiles/admin`, `/actuator/**` → `ROLE_ADMIN`
   - `/profiles/user`, `/api/protected/**` → `ROLE_USER | ROLE_ADMIN`
 
@@ -134,6 +135,18 @@ Visit `http://localhost:5173` and log in as:
 - User: `user` / `User@123`
 
 API keys are created from Admin → API Keys and then pasted into the user portal for simulator runs.
+
+## Free cloud deployment
+
+For a zero-cost deployment on Render (backend + Postgres + Redis + frontend), follow:
+
+- [Render free deployment guide](docs/DEPLOY_RENDER_FREE.md)
+
+### Live URLs
+
+- Frontend: `https://polaris-frontend-k8ki.onrender.com`
+- Backend API base: `https://polaris-api-m242.onrender.com`
+- Backend health: `https://polaris-api-m242.onrender.com/actuator/health`
 
 ## API summary
 
