@@ -1,12 +1,9 @@
 package com.kailas.polaris.config;
 
-import io.lettuce.core.RedisURI;
 import io.lettuce.core.resource.ClientResources;
 import io.lettuce.core.resource.DefaultClientResources;
-import io.netty.resolver.AddressResolverGroup;
-import io.netty.resolver.dns.DnsAddressResolverGroup;
-import io.netty.resolver.dns.DnsNameResolverBuilder;
-import io.netty.resolver.dns.ResolvedAddressTypes;
+import io.netty.resolver.DefaultAddressResolverGroup;
+import java.net.URI;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -24,17 +21,17 @@ import org.springframework.util.StringUtils;
 public class RedisConfig {
 
     @Bean(destroyMethod = "shutdown")
-    public ClientResources clientResources() {
-        AddressResolverGroup<?> resolverGroup = new DnsAddressResolverGroup(
-                new DnsNameResolverBuilder().resolvedAddressTypes(ResolvedAddressTypes.IPV6_PREFERRED));
+    public ClientResources lettuceClientResources() {
+        // Use JDK DNS resolver (respects java.net.preferIPv6Addresses=true)
+        // which is needed for Railway's IPv6-only private network
         return DefaultClientResources.builder()
-                .addressResolverGroup(resolverGroup)
+                .addressResolverGroup(DefaultAddressResolverGroup.INSTANCE)
                 .build();
     }
 
     @Bean
     public LettuceConnectionFactory redisConnectionFactory(
-            ClientResources clientResources,
+            ClientResources lettuceClientResources,
             @Value("${spring.data.redis.url:}") String redisUrl,
             @Value("${spring.data.redis.host:localhost}") String host,
             @Value("${spring.data.redis.port:6379}") int port,
@@ -42,18 +39,28 @@ public class RedisConfig {
             @Value("${spring.data.redis.username:}") String username
     ) {
         LettuceClientConfiguration clientConfig = LettuceClientConfiguration.builder()
-                .clientResources(clientResources)
+                .clientResources(lettuceClientResources)
                 .build();
 
         RedisStandaloneConfiguration config;
         if (StringUtils.hasText(redisUrl)) {
-            RedisURI uri = RedisURI.create(redisUrl);
-            config = new RedisStandaloneConfiguration(uri.getHost(), uri.getPort());
-            if (uri.getPassword() != null && uri.getPassword().length > 0) {
-                config.setPassword(RedisPassword.of(uri.getPassword()));
-            }
-            if (StringUtils.hasText(uri.getUsername())) {
-                config.setUsername(uri.getUsername());
+            URI parsed = URI.create(redisUrl);
+            config = new RedisStandaloneConfiguration(parsed.getHost(), parsed.getPort());
+            String userInfo = parsed.getUserInfo();
+            if (StringUtils.hasText(userInfo)) {
+                int colon = userInfo.indexOf(':');
+                if (colon >= 0) {
+                    String uriUser = userInfo.substring(0, colon);
+                    String uriPass = userInfo.substring(colon + 1);
+                    if (StringUtils.hasText(uriPass)) {
+                        config.setPassword(RedisPassword.of(uriPass));
+                    }
+                    if (StringUtils.hasText(uriUser)) {
+                        config.setUsername(uriUser);
+                    }
+                } else {
+                    config.setPassword(RedisPassword.of(userInfo));
+                }
             }
         } else {
             config = new RedisStandaloneConfiguration(host, port);
@@ -74,19 +81,13 @@ public class RedisConfig {
         StringRedisSerializer serializer = new StringRedisSerializer();
         template.setKeySerializer(serializer);
         template.setValueSerializer(serializer);
-        template.afterPropertiesSet();
         return template;
     }
 
+    @SuppressWarnings("rawtypes")
     @Bean
     public RedisScript<List> slidingWindowScript() {
         return RedisScript.of("""
-                -- KEYS[1] = redisKey
-                -- ARGV[1] = now
-                -- ARGV[2] = window
-                -- ARGV[3] = limit
-                -- ARGV[4] = member
-
                 local key = KEYS[1]
                 local now = tonumber(ARGV[1])
                 local window = tonumber(ARGV[2])

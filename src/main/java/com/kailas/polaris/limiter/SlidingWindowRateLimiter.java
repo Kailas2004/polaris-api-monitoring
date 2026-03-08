@@ -14,6 +14,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Component;
 
+@SuppressWarnings({"rawtypes", "unchecked"})
 @Component
 public class SlidingWindowRateLimiter implements RateLimiter {
 
@@ -35,7 +36,6 @@ public class SlidingWindowRateLimiter implements RateLimiter {
 
     @Override
     public RateLimitDecision check(String apiKeyValue) {
-        System.out.println("SLIDING WINDOW EXECUTED");
         ApiKey apiKey = apiKeyRepository.findByKeyValue(apiKeyValue)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid API key"));
         if (!apiKey.isActive()) {
