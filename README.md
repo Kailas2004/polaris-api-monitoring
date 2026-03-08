@@ -28,6 +28,7 @@ The implementation treats these questions as first-class design concerns.
 ## Quick Navigation
 
 - [Live Demo](#live-demo)
+- [UI Preview](#ui-preview)
 - [Engineering Invariants](#engineering-invariants)
 - [Rate Limiting Algorithms](#rate-limiting-algorithms)
 - [Plan Model](#plan-model)
@@ -52,6 +53,32 @@ The implementation treats these questions as first-class design concerns.
   - Password: `User@123`
 
 Admin credentials are intentionally private.
+
+## UI Preview
+
+### Authentication
+
+![Login](docs/screenshots/login.png)
+
+### Admin Views
+
+| Dashboard | API Keys |
+|---|---|
+| ![Admin Dashboard](docs/screenshots/admin-dashboard.png) | ![API Keys](docs/screenshots/admin-api-keys.png) |
+
+| Rate Policies | System Health + Audit Log |
+|---|---|
+| ![Rate Policies](docs/screenshots/admin-rate-policies.png) | ![System Health](docs/screenshots/admin-system-health.png) |
+
+### User Views
+
+| API Key Login | User Dashboard |
+|---|---|
+| ![API Key Login](docs/screenshots/user-api-key-login.png) | ![User Dashboard](docs/screenshots/user-dashboard.png) |
+
+| Request Simulator |
+|---|
+| ![Request Simulator](docs/screenshots/user-simulator.png) |
 
 ## Engineering Invariants
 
