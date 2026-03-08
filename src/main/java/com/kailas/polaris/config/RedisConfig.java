@@ -1,12 +1,19 @@
 package com.kailas.polaris.config;
 
 import io.lettuce.core.RedisURI;
+import io.lettuce.core.resource.ClientResources;
+import io.lettuce.core.resource.DefaultClientResources;
+import io.netty.resolver.AddressResolverGroup;
+import io.netty.resolver.dns.DnsAddressResolverGroup;
+import io.netty.resolver.dns.DnsNameResolverBuilder;
+import io.netty.resolver.dns.ResolvedAddressTypes;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisPassword;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
+import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.RedisScript;
@@ -16,33 +23,48 @@ import org.springframework.util.StringUtils;
 @Configuration
 public class RedisConfig {
 
+    @Bean(destroyMethod = "shutdown")
+    public ClientResources clientResources() {
+        AddressResolverGroup<?> resolverGroup = new DnsAddressResolverGroup(
+                new DnsNameResolverBuilder().resolvedAddressTypes(ResolvedAddressTypes.IPV6_PREFERRED));
+        return DefaultClientResources.builder()
+                .addressResolverGroup(resolverGroup)
+                .build();
+    }
+
     @Bean
     public LettuceConnectionFactory redisConnectionFactory(
+            ClientResources clientResources,
             @Value("${spring.data.redis.url:}") String redisUrl,
             @Value("${spring.data.redis.host:localhost}") String host,
             @Value("${spring.data.redis.port:6379}") int port,
             @Value("${spring.data.redis.password:}") String password,
             @Value("${spring.data.redis.username:}") String username
     ) {
+        LettuceClientConfiguration clientConfig = LettuceClientConfiguration.builder()
+                .clientResources(clientResources)
+                .build();
+
+        RedisStandaloneConfiguration config;
         if (StringUtils.hasText(redisUrl)) {
             RedisURI uri = RedisURI.create(redisUrl);
-            RedisStandaloneConfiguration config = new RedisStandaloneConfiguration(uri.getHost(), uri.getPort());
+            config = new RedisStandaloneConfiguration(uri.getHost(), uri.getPort());
             if (uri.getPassword() != null && uri.getPassword().length > 0) {
                 config.setPassword(RedisPassword.of(uri.getPassword()));
             }
             if (StringUtils.hasText(uri.getUsername())) {
                 config.setUsername(uri.getUsername());
             }
-            return new LettuceConnectionFactory(config);
+        } else {
+            config = new RedisStandaloneConfiguration(host, port);
+            if (StringUtils.hasText(password)) {
+                config.setPassword(RedisPassword.of(password));
+            }
+            if (StringUtils.hasText(username)) {
+                config.setUsername(username);
+            }
         }
-        RedisStandaloneConfiguration config = new RedisStandaloneConfiguration(host, port);
-        if (StringUtils.hasText(password)) {
-            config.setPassword(RedisPassword.of(password));
-        }
-        if (StringUtils.hasText(username)) {
-            config.setUsername(username);
-        }
-        return new LettuceConnectionFactory(config);
+        return new LettuceConnectionFactory(config, clientConfig);
     }
 
     @Bean
