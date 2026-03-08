@@ -1,5 +1,6 @@
 package com.kailas.polaris.config;
 
+import io.lettuce.core.RedisURI;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -17,11 +18,23 @@ public class RedisConfig {
 
     @Bean
     public LettuceConnectionFactory redisConnectionFactory(
+            @Value("${spring.data.redis.url:}") String redisUrl,
             @Value("${spring.data.redis.host:localhost}") String host,
             @Value("${spring.data.redis.port:6379}") int port,
             @Value("${spring.data.redis.password:}") String password,
             @Value("${spring.data.redis.username:}") String username
     ) {
+        if (StringUtils.hasText(redisUrl)) {
+            RedisURI uri = RedisURI.create(redisUrl);
+            RedisStandaloneConfiguration config = new RedisStandaloneConfiguration(uri.getHost(), uri.getPort());
+            if (uri.getPassword() != null && uri.getPassword().length > 0) {
+                config.setPassword(RedisPassword.of(uri.getPassword()));
+            }
+            if (StringUtils.hasText(uri.getUsername())) {
+                config.setUsername(uri.getUsername());
+            }
+            return new LettuceConnectionFactory(config);
+        }
         RedisStandaloneConfiguration config = new RedisStandaloneConfiguration(host, port);
         if (StringUtils.hasText(password)) {
             config.setPassword(RedisPassword.of(password));
