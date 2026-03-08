@@ -134,27 +134,42 @@ const UserPage = () => {
     let unauthorized = 0;
     let otherErrors = 0;
 
+    // Fire requests in concurrent batches so they arrive at the server before
+    // the rate limiter can replenish tokens between calls.
+    const BATCH_SIZE = 50;
+
     try {
-      for (let index = 0; index < total; index += 1) {
-        try {
-          await callProtectedTest(sessionApiKey);
-          allowed += 1;
-          nextLogs.push('200 OK');
-        } catch (err) {
-          if (err.status === 429) {
-            blocked += 1;
-            nextLogs.push('429 TOO MANY REQUESTS');
-          } else if (err.status === 401) {
-            unauthorized += 1;
-            nextLogs.push('401 UNAUTHORIZED');
-          } else if (err.status === 403) {
-            unauthorized += 1;
-            nextLogs.push('403 FORBIDDEN');
+      for (let i = 0; i < total; i += BATCH_SIZE) {
+        const batchCount = Math.min(BATCH_SIZE, total - i);
+        const results = await Promise.allSettled(
+          Array.from({ length: batchCount }, () => callProtectedTest(sessionApiKey))
+        );
+
+        for (const result of results) {
+          if (result.status === 'fulfilled') {
+            allowed += 1;
+            nextLogs.push('200 OK');
           } else {
-            otherErrors += 1;
-            nextLogs.push(`${err.status || 500} ERROR`);
+            const err = result.reason;
+            if (err.status === 429) {
+              blocked += 1;
+              nextLogs.push('429 TOO MANY REQUESTS');
+            } else if (err.status === 401) {
+              unauthorized += 1;
+              nextLogs.push('401 UNAUTHORIZED');
+            } else if (err.status === 403) {
+              unauthorized += 1;
+              nextLogs.push('403 FORBIDDEN');
+            } else {
+              otherErrors += 1;
+              nextLogs.push(`${err.status || 500} ERROR`);
+            }
           }
         }
+
+        // Update UI after each batch for live progress feedback
+        setSummary({ total, allowed, blocked, unauthorized, otherErrors });
+        setLogs([...nextLogs]);
       }
     } finally {
       setSummary({ total, allowed, blocked, unauthorized, otherErrors });
