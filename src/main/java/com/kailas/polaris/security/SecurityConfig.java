@@ -1,6 +1,7 @@
 package com.kailas.polaris.security;
 
 import java.util.Arrays;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -99,9 +100,29 @@ public class SecurityConfig {
     }
 
     @Bean
-    public CorsConfigurationSource corsConfigurationSource(@Value("${polaris.cors.allowed-origins:http://localhost:5173,http://localhost:4173}") String origins) {
+    public CorsConfigurationSource corsConfigurationSource(
+            @Value("${polaris.cors.allowed-origins:http://localhost:5173,http://localhost:4173,https://polaris-frontend-production.up.railway.app}") String origins,
+            @Value("${polaris.cors.allowed-origin-patterns:https://*.up.railway.app}") String originPatterns
+    ) {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(Arrays.stream(origins.split(",")).map(String::trim).filter(v -> !v.isEmpty()).toList());
+        List<String> allowedOrigins = Arrays.stream(origins.split(","))
+                .map(String::trim)
+                .filter(v -> !v.isEmpty())
+                .toList();
+        List<String> allowedPatterns = Arrays.stream(originPatterns.split(","))
+                .map(String::trim)
+                .filter(v -> !v.isEmpty())
+                .toList();
+
+        if (!allowedOrigins.isEmpty()) {
+            config.setAllowedOrigins(allowedOrigins);
+        }
+        if (!allowedPatterns.isEmpty()) {
+            config.setAllowedOriginPatterns(allowedPatterns);
+        }
+        if (allowedOrigins.isEmpty() && allowedPatterns.isEmpty()) {
+            config.addAllowedOriginPattern("*");
+        }
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(Arrays.asList("*"));
         config.setExposedHeaders(Arrays.asList("Retry-After"));

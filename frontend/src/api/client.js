@@ -1,4 +1,7 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+const fallbackApiBase = import.meta.env.PROD
+  ? 'https://polaris-api-production-96ea.up.railway.app'
+  : 'http://localhost:8080';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || fallbackApiBase;
 const AUTH_TOKEN_KEY = 'polaris-auth-token';
 const AUTH_EVENT = 'polaris-auth-changed';
 let authToken = localStorage.getItem(AUTH_TOKEN_KEY) || '';

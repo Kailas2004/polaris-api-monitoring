@@ -1,16 +1,9 @@
 package com.kailas.polaris.config;
 
 import java.util.List;
-import io.lettuce.core.ClientOptions;
-import io.lettuce.core.api.StatefulConnection;
-import java.time.Duration;
-import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
-import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration;
-import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
-import org.springframework.data.redis.connection.lettuce.LettucePoolingClientConfiguration;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
@@ -19,14 +12,7 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 public class RedisConfig {
 
     @Bean
-    public LettuceConnectionFactory redisConnectionFactory(LettuceClientConfiguration clientConfiguration) {
-        RedisStandaloneConfiguration config =
-                new RedisStandaloneConfiguration("localhost", 6379);
-        return new LettuceConnectionFactory(config, clientConfiguration);
-    }
-
-    @Bean
-    public RedisTemplate<String, String> redisTemplate(LettuceConnectionFactory factory) {
+    public RedisTemplate<String, String> redisTemplate(RedisConnectionFactory factory) {
         RedisTemplate<String, String> template = new RedisTemplate<>();
         template.setConnectionFactory(factory);
         StringRedisSerializer serializer = new StringRedisSerializer();
@@ -34,25 +20,6 @@ public class RedisConfig {
         template.setValueSerializer(serializer);
         template.afterPropertiesSet();
         return template;
-    }
-
-    @Bean
-    public LettuceClientConfiguration lettuceClientConfiguration() {
-        GenericObjectPoolConfig<StatefulConnection<?, ?>> poolConfig = new GenericObjectPoolConfig<>();
-        poolConfig.setMaxTotal(8);
-        poolConfig.setMaxIdle(8);
-        poolConfig.setMinIdle(0);
-
-        ClientOptions clientOptions = ClientOptions.builder()
-                .autoReconnect(false)
-                .build();
-
-        return LettucePoolingClientConfiguration.builder()
-                .commandTimeout(Duration.ofSeconds(2))
-                .shutdownTimeout(Duration.ofMillis(100))
-                .clientOptions(clientOptions)
-                .poolConfig(poolConfig)
-                .build();
     }
 
     @Bean
