@@ -203,6 +203,35 @@ class RateLimiterIntegrationTest {
     }
 
     // -------------------------------------------------------------------------
+    // Server-side simulation endpoint
+    // -------------------------------------------------------------------------
+
+    @Test
+    void serverSimulateBlocksRequestsBeyondLimit() {
+        String keyValue = createApiKey("FREE");
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(adminToken);
+        headers.set("X-API-KEY", keyValue);
+
+        ResponseEntity<Map> resp = restTemplate.exchange(
+                url("/api/simulate?count=150"),
+                HttpMethod.POST,
+                new HttpEntity<>(headers),
+                Map.class);
+
+        Assertions.assertEquals(200, resp.getStatusCode().value());
+        int total = ((Number) resp.getBody().get("total")).intValue();
+        int allowed = ((Number) resp.getBody().get("allowed")).intValue();
+        int blocked = ((Number) resp.getBody().get("blocked")).intValue();
+
+        Assertions.assertEquals(150, total);
+        Assertions.assertEquals(150, allowed + blocked + ((Number) resp.getBody().get("unauthorized")).intValue());
+        Assertions.assertTrue(blocked > 0, "Server-side simulation must block requests beyond the FREE plan limit");
+        Assertions.assertTrue(allowed >= 100, "Server-side simulation must allow at least 100 requests");
+    }
+
+    // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
 

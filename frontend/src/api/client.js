@@ -145,6 +145,12 @@ export const callProtectedTest = (apiKey) =>
     }
   });
 
+export const runServerSimulate = (apiKey, count) =>
+  request(`/api/simulate?count=${count}`, {
+    method: 'POST',
+    headers: { 'X-API-KEY': apiKey }
+  });
+
 export const setAuthToken = (token) => {
   authToken = token || '';
   if (authToken) {

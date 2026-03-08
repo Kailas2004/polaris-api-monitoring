@@ -54,7 +54,7 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
                         .requestMatchers("/auth/me", "/auth/logout").authenticated()
                         .requestMatchers("/admin/**", "/api/keys/**", "/profiles/admin", "/actuator/**").hasRole("ADMIN")
-                        .requestMatchers("/profiles/user", "/api/protected/**").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers("/profiles/user", "/api/protected/**", "/api/simulate").hasAnyRole("USER", "ADMIN")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(bearerTokenAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
