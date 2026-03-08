@@ -323,7 +323,7 @@ erDiagram
 
 **USER**
 - Verify API keys and view plan info
-- Run request simulation against the rate-limited endpoint
+- Run server-side request simulation — the backend fires all requests concurrently using a thread pool, returning precise allowed/blocked counts unaffected by browser connection limits
 - View own user profile
 
 ### Auth Flow
@@ -348,6 +348,9 @@ erDiagram
 
 ### Rate-Limited Endpoint
 - `GET /api/protected/test` — test endpoint enforcing rate limits (requires `X-API-KEY` header)
+
+### Simulation (USER + ADMIN)
+- `POST /api/simulate?count={n}` — fire `n` requests (1–5000) against the rate limiter concurrently from the server side (requires `X-API-KEY` header). Returns `{ total, allowed, blocked, unauthorized, durationMs }`. Uses a 100-thread pool with a start-gun latch so all requests reach Redis simultaneously, bypassing browser HTTP connection limits for accurate enforcement demos.
 
 ### Profiles
 - `GET /profiles/admin` — admin strategy overview (ADMIN)
@@ -505,9 +508,20 @@ Tests use **Testcontainers** (PostgreSQL 15 + Redis 7) — no local infrastructu
 
 ### Test Coverage
 
-`RateLimiterIntegrationTest` validates FREE plan enforcement end-to-end:
-- Creates a FREE plan API key (100 requests / 60 seconds)
-- Sends 105 sequential requests to the rate-limited endpoint
-- Asserts exactly 100 allowed (HTTP 200) and 5 blocked (HTTP 429)
+Tests use a `CountDownLatch` start-gun to release all threads simultaneously so requests arrive at Redis before any token or window replenishment can occur, matching the conditions of real concurrent API traffic.
 
-`PolarisApplicationTests` validates the Spring context loads cleanly with all beans wired.
+**`RateLimiterIntegrationTest`** (9 tests)
+
+| Test | What it verifies |
+|---|---|
+| `freePlanSlidingWindowBlocksRequestsBeyondLimit` | 105 concurrent requests → exactly 100 allowed, 5 blocked |
+| `proPlanSlidingWindowAllowsHigherLimit` | 200 concurrent requests on PRO plan all pass (limit is 1000) |
+| `freePlanTokenBucketBlocksRequestsBeyondCapacity` | Concurrent burst exhausts 100-token bucket; blocked count > 0 |
+| `tokenBucketAllowsFullBurstUpToCapacity` | Exactly 100 concurrent requests → 0 blocked (burst equals capacity) |
+| `strategySwitchAppliesImmediately` | Admin strategy change via API takes effect on the next request |
+| `missingApiKeyReturns401` | Request without `X-API-KEY` header → 401 |
+| `inactiveApiKeyReturnsForbidden` | Deactivated key → 403 |
+| `blockedResponseIncludesRetryAfterHeader` | 429 response carries `Retry-After` header |
+| `serverSimulateBlocksRequestsBeyondLimit` | `POST /api/simulate?count=150` fires requests server-side and returns blocked > 0 |
+
+**`PolarisApplicationTests`** (1 test) — Spring context loads cleanly with all beans wired.
