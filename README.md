@@ -268,8 +268,10 @@ Visit `http://localhost:5173`; log in as admin/user and paste a freshly created 
 | `SPRING_DATA_REDIS_PASSWORD` | Redis password (optional). |
 | `POLARIS_AUTH_ADMIN_USERNAME` / `POLARIS_AUTH_ADMIN_PASSWORD` | Admin credentials. |
 | `POLARIS_AUTH_USER_USERNAME` / `POLARIS_AUTH_USER_PASSWORD` | User credentials. |
-| `POLARIS_CORS_ALLOWED_ORIGINS` | Whitelist domains (e.g., frontend). |
+| `POLARIS_CORS_ALLOWED_ORIGINS` | Whitelist domains (includes `https://polaris-frontend-production.up.railway.app` by default). |
+| `POLARIS_CORS_ALLOWED_ORIGIN_PATTERNS` | Optional wildcard allow list (defaults to `https://*.up.railway.app`). |
 | `MANAGEMENT_ENDPOINTS_WEB_CORS_ALLOWED_ORIGINS` | Allow health/CORS. |
+| `VITE_API_BASE_URL` | Frontend build-time API base for uploads/deployments (set to backend URL on Railway). |
 | `PORT` | Server port. |
 
 ## Testing

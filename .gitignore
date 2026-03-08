@@ -34,3 +34,23 @@ build/
 ### VS Code ###
 .vscode/
 .mcp.json
+
+### Frontend build output ###
+frontend/dist/
+
+### Logs ###
+*.log
+frontend/frontend.log
+
+### AI/Editor tools ###
+.codex/
+.cursor/
+.gemini/
+.zed/
+.playwright-mcp/
+opencode.json
+config/
+
+### OS ###
+.DS_Store
+**/.DS_Store

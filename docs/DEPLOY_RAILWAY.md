@@ -71,6 +71,7 @@ Set backend CORS for your frontend domain:
 ```bash
 POLARIS_CORS_ALLOWED_ORIGINS=https://<your-frontend-domain>
 MANAGEMENT_ENDPOINTS_WEB_CORS_ALLOWED_ORIGINS=https://<your-frontend-domain>
+POLARIS_CORS_ALLOWED_ORIGIN_PATTERNS=https://*.up.railway.app
 ```
 
 ## 5. Validate
